@@ -12,7 +12,31 @@ It includes both the core cipher implementation and a suite of companion tools f
 
 ## How It Works
 
-At its core, Sicarii is a **byte-oriented stream cipher–like** construction:
+## Core Mechanism
+
+At the heart of Sicarii is a **dynamic, stateful 256×256 byte matrix**.
+
+Each encryption step involves:
+
+1. **Dynamic Row Swapping** –  
+   The matrix rows are not fixed. They are *continuously permuted* during encryption based on evolving key– and data–dependent state, making the transformation sequence **non-repeating** and input-sensitive.
+
+2. **Byte-Level XOR Diffusion** –  
+   Every processed byte undergoes multiple XOR passes against matrix-derived values. This ensures strong **avalanche effect** — a 1-bit change in the input radically alters the output.
+
+3. **Data-Dependent Evolution** –  
+   The act of encrypting modifies the internal state, so the same byte value in a different position will see a completely different transformation chain.
+
+4. **512-Byte Expanded Key** –  
+   Passcode mode expands a user’s passphrase into a full 512-byte working key via PBKDF2-HMAC-SHA256 (configurable iterations). Key mode skips derivation and uses a raw 512-byte key directly.
+
+Because the transformation matrix is large (65,536 byte slots) and **actively reconfigured** during operation, Sicarii behaves unlike simple substitution–permutation networks:
+
+- It does not rely on a fixed S-box.  
+- It embeds *both key schedule* and *data mixing* directly into the evolving matrix.  
+- Reuse of the same key still produces dramatically different byte maps for each block.
+
+This design makes Sicarii particularly suited for **educational cryptanalysis labs** — it’s small enough to step through in Python, yet complex enough to demonstrate **why stateful designs resist naive attacks**.
 
 - **Key Material**
   - In *passcode mode*, a user-supplied passphrase is expanded into a **512-byte working key** using PBKDF2-HMAC-SHA256 with a fixed iteration count and salt.
