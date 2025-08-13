@@ -85,6 +85,27 @@ This design makes Sicarii particularly suited for **educational cryptanalysis la
 | `sicarii_validation.py` | End-to-end functional validation of encryption/decryption correctness. |
 | `sicarii_bench.py` | Simple encryption/decryption performance benchmark. |
 
+## Quantum-Resilience Intuition & Caveats
+
+Sicarii isn’t claiming provable post-quantum security, but its **configuration space explodes** with message length in a way that can **outpace Grover’s √N speed-up** for generic search — if brute force remains the best available quantum attack.
+
+- **Per-message structure:** A 256×256 substitution matrix is rebuilt from `(key || nonce)`, then **dynamically permuted each byte** via a PRF-driven swap of two rows.  
+- **Per-byte evolution:** Each step uses:
+  - a row-selection byte (256 choices), and  
+  - a row-swap pair (~256² choices),  
+  giving roughly **256³ ≈ 2²⁴ possibilities per byte** from evolution alone.
+- **Output masking:** A fresh 256-byte permutation (π_out) further hides column indices (~256! options).
+
+For a message of length *L*, the number of distinct transformations consistent with the same key/nonce is approximately:
+
+(256!) × (256^3)^L ≈ 2^(L·24) × 256!
+
+Even under Grover’s algorithm, √N only halves the exponent, which still leaves an astronomical search space as *L* grows. The **effective hardness scales linearly in *L*** (24 bits per byte here), so the gap between search cost and attack feasibility widens with message size.
+
+⚠️ **Important:** This is **intuition, not a proof**. Real-world security depends on the absence of structural shortcuts (algebraic, meet-in-the-middle, slide, or cycle attacks). Quantum cryptanalysis can sometimes exploit structure in ways classical attacks cannot. Sicarii should be viewed as **one layer** in a “Swiss cheese” security model, where multiple independent mechanisms cover each other’s gaps.
+
+> **Additional Note:** Sicarii includes attack demos and test harnesses to invite public scrutiny. Parameters like matrix size (*N*) and evolution rules can be tuned to trade performance for a larger theoretical margin.
+
 ---
 
 ## Example Usage
